@@ -881,3 +881,23 @@ rule 'FC065', 'Ensure source_url is set in metadata' do
     [file_match(filename)] unless field(ast, 'source_url').any?
   end
 end
+
+rule 'FC066', 'Version attribute specified on a package resource using the '\
+              ':upgrade action' do
+  tags %w(style)
+  recipe do |ast|
+    pres = find_resources(ast, type: 'package').find_all do |cmd|
+      cmd_action = resource_attribute(cmd, 'action').to_s
+      cmd_version = resource_attribute(cmd, 'version')
+      cmd_name = (resource_attribute(cmd, 'package_name') || resource_name(cmd)).to_s
+      cmd_action.include?('upgrade') && !cmd_version.nil?
+    end
+    ypres = find_resources(ast, type: 'yum_package').find_all do |cmd|
+      cmd_action = resource_attribute(cmd, 'action').to_s
+      cmd_version = resource_attribute(cmd, 'version')
+      cmd_name = (resource_attribute(cmd, 'package_name') || resource_name(cmd)).to_s
+      cmd_action.include?('upgrade') && !cmd_version.nil?
+    end
+    pres.concat(ypres).map { |cmd| match(cmd) }
+  end
+end
